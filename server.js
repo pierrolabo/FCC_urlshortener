@@ -42,44 +42,36 @@ app.get('/api/hello', function (req, res) {
   res.json({ greeting: 'hello API' });
 });
 
-app.post('/api/shorturl', function (req, res) {
+app.post('/api/shorturl/new', function (req, res) {
   let url = req.body.url;
   let parsedURL = parseURL(url);
-  console.log('url:', url);
 
   //url validation
   if (parsedURL !== undefined) {
     dns.lookup(parsedURL, (err, address, family) => {
-      console.log('pass');
       if (err) {
-        res.json({ error: 'lookup failed' });
+        res.json({ error: 'invalid URL' });
       } else {
         urlShortened.find({}).then((entries) => {
-          console.log('deep:', entries.length);
           let newUrl = new urlShortened({ id: entries.length + 1, url: url });
           newUrl.save(function (err, result) {
             if (err) console.log(err);
-            console.log('resukt', result);
             res.json({
-              status: 'success',
-              ip: address,
-              message: url,
-              result: result,
+              original_url: url,
+              result: result.id,
             });
           });
         });
       }
     });
   } else {
-    res.json({ error: 'wrong url' });
+    res.json({ error: 'invalid URL' });
   }
 });
 
 app.get('/api/shorturl/:id', function (req, res) {
   let id = req.params.id;
-  console.log('get: ', id);
   urlShortened.findOne({ id: id }, function (err, result) {
-    console.log('found:', result);
     if (result !== null) {
       res.redirect(result.url);
     } else {
@@ -87,18 +79,7 @@ app.get('/api/shorturl/:id', function (req, res) {
     }
   });
 });
-//Check if url is valid
-const lookup = (url) => {
-  dns.lookup(url, (err, address, family) => {
-    console.log('pass');
-    if (err) {
-      console.log('err:', err);
-      return false;
-    } else {
-      return true;
-    }
-  });
-};
+
 //parseURL
 const parseURL = (str) => {
   const reg = /www\.\w+.\w+/;
@@ -109,6 +90,6 @@ const parseURL = (str) => {
     return undefined;
   }
 };
-app.listen(port, function () {
+app.listen(process.env.PORT, function () {
   console.log('Node.js listening ...', port);
 });
